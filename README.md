@@ -376,9 +376,9 @@ inside-rl/
 
 ## 👤 Auteur
 
-**Zakaria EL Haddouchi**
-- Email : zakariaeelhaddouchi@ump.ac.ma
-- Université Mohammed Premier (UMP)
+**EL AIBOUDI MARYAM**
+- Email : mariamelaiboudi@gmail.com
+- École Nationale de l'Intelligence Artificielle et du Digital
 
 ---
 
