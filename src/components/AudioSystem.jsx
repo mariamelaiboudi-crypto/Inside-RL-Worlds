@@ -1,4 +1,4 @@
-import { createContext, useContext, useRef, useState, useCallback } from 'react'
+import { createContext, useContext, useRef, useState, useCallback, useEffect } from 'react'
 
 const AudioCtx = createContext(null)
 export const useAudio = () => useContext(AudioCtx)
@@ -127,11 +127,13 @@ export function playConceptUnlock(ctx) {
 
 export function AudioProvider({ children }) {
   const [audioCtx, setAudioCtx] = useState(null)
-  const [enabled, setEnabled] = useState(false)
+  const [enabled, setEnabled] = useState(true)
   const droneRef = useRef(null)
+  const initializedRef = useRef(false)
 
   const initialize = useCallback(() => {
-    if (audioCtx) return audioCtx
+    if (initializedRef.current) return audioCtx
+    initializedRef.current = true
     const ctx = new (window.AudioContext || window.webkitAudioContext)()
     const drone = buildDrone(ctx)
     droneRef.current = drone
@@ -141,11 +143,28 @@ export function AudioProvider({ children }) {
     return ctx
   }, [audioCtx])
 
-  const toggle = useCallback(() => {
-    if (!audioCtx) {
-      initialize()
-      return
+  // Auto-start audio on first user interaction (required by browsers)
+  useEffect(() => {
+    const startOnFirstInteraction = () => {
+      if (!initializedRef.current) {
+        initialize()
+      }
+      window.removeEventListener('click', startOnFirstInteraction)
+      window.removeEventListener('keydown', startOnFirstInteraction)
+      window.removeEventListener('touchstart', startOnFirstInteraction)
     }
+    window.addEventListener('click', startOnFirstInteraction)
+    window.addEventListener('keydown', startOnFirstInteraction)
+    window.addEventListener('touchstart', startOnFirstInteraction)
+    return () => {
+      window.removeEventListener('click', startOnFirstInteraction)
+      window.removeEventListener('keydown', startOnFirstInteraction)
+      window.removeEventListener('touchstart', startOnFirstInteraction)
+    }
+  }, [initialize])
+
+  const toggle = useCallback(() => {
+    if (!audioCtx) return
     if (enabled) {
       droneRef.current?.master.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.4)
       setEnabled(false)
@@ -153,14 +172,14 @@ export function AudioProvider({ children }) {
       droneRef.current?.master.gain.linearRampToValueAtTime(0.12, audioCtx.currentTime + 0.6)
       setEnabled(true)
     }
-  }, [audioCtx, enabled, initialize])
+  }, [audioCtx, enabled])
 
   return (
     <AudioCtx.Provider value={{ audioCtx, enabled, initialize }}>
       {children}
       <button
         onClick={toggle}
-        title={enabled ? 'Mute ambient audio' : 'Enable ambient audio'}
+        title={enabled ? 'Mute' : 'Unmute'}
         className="fixed bottom-5 right-5 z-50 w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-300"
         style={{
           background: 'rgba(0,5,16,0.92)',
